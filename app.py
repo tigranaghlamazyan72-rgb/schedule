@@ -11,60 +11,61 @@ st.set_page_config(
     layout="centered",
 )
 
-# ─── Кастомные стили ─────────────────────────────────────────────────────────
+# ─── Кастомные стили (Светлая тема) ─────────────────────────────────────────
 st.markdown("""
 <style>
 /* Основной фон и шрифт */
-.stApp { background: #0f1117; }
+.stApp { background: #f8fafc; color: #1e293b; }
 
 /* Заголовок */
 .main-title {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
-    color: #f0f4ff;
+    color: #0f172a;
     letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .main-sub {
     font-size: 14px;
-    color: #6b7280;
+    color: #64748b;
     margin-bottom: 32px;
 }
 
 /* Карточки-секции */
 .section-card {
-    background: #1a1d27;
-    border: 1px solid #2d3148;
-    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
     padding: 24px 28px;
     margin-bottom: 20px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 .section-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #8892a4;
-    margin-bottom: 10px;
+    letter-spacing: 0.8px;
+    color: #475569;
+    margin-bottom: 14px;
 }
 
 /* Статус файла */
 .file-ok {
-    background: #0d2118;
-    border: 1px solid #1a4731;
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: #34d399;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: #166534;
     font-size: 14px;
     font-weight: 600;
     margin-top: 10px;
 }
 .file-none {
-    background: #1a1d27;
-    border: 1px dashed #2d3148;
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: #4b5563;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 16px;
+    color: #64748b;
     font-size: 14px;
     margin-top: 10px;
     text-align: center;
@@ -74,51 +75,72 @@ st.markdown("""
 .result-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 16px;
     margin-top: 20px;
 }
 .result-card {
-    background: #1a1d27;
-    border: 1px solid #2d3148;
-    border-radius: 12px;
-    padding: 18px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 20px 12px;
     text-align: center;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 .result-val {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 800;
     display: block;
     line-height: 1;
 }
 .result-lbl {
     font-size: 11px;
-    color: #6b7280;
-    margin-top: 6px;
-    font-weight: 600;
+    color: #64748b;
+    margin-top: 8px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.7px;
 }
-.val-ok   { color: #34d399; }
-.val-skip { color: #fbbf24; }
-.val-err  { color: #f87171; }
+.val-ok   { color: #10b981; }
+.val-skip { color: #f59e0b; }
+.val-err  { color: #ef4444; }
 
 /* Лог */
 .log-entry {
-    font-family: 'Courier New', monospace;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
     font-size: 13px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    margin-bottom: 4px;
+    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
     line-height: 1.5;
+    border: 1px solid transparent;
 }
-.log-ok   { background: #0d2118; color: #34d399; }
-.log-err  { background: #1f1010; color: #f87171; }
-.log-warn { background: #1f1a0a; color: #fbbf24; }
-.log-info { background: #0d1a2d; color: #60a5fa; }
+.log-ok   { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
+.log-err  { background: #fef2f2; color: #991b1b; border-color: #fee2e2; }
+.log-warn { background: #fffbec; color: #92400e; border-color: #fef3c7; }
+.log-info { background: #f0f9ff; color: #075985; border-color: #e0f2fe; }
+
+/* Адаптация дефолтных элементов ввода Streamlit под светлую тему */
+div[data-baseweb="input"] {
+    background-color: #ffffff !important;
+    border-radius: 10px !important;
+}
+button[kind="primary"] {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1rem !important;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
+}
+button[kind="secondary"] {
+    border-radius: 10px !important;
+}
 
 /* Скрыть стандартные элементы streamlit */
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 2rem; max-width: 680px; }
+.block-container { padding-top: 3rem; max-width: 680px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -165,7 +187,7 @@ def build_messages(name: str, group: pd.DataFrame) -> list[str]:
 
         block = (
             f"{number_emoji} *{escape_markdown(time_val)}* — {event_name}\n"
-            f"   🏆 {competition}\n\n"
+            f"    🏆 {competition}\n\n"
         )
 
         if len(current_msg) + len(block) > 3900:
@@ -201,7 +223,7 @@ async def send_schedules(token: str, admin_id: int, user_ids: dict,
         grouped = df.groupby('Оператор')
 
         for operator_name, group in grouped:
-            name_clean   = str(operator_name).strip()
+            name_clean  = str(operator_name).strip()
             matches_count = len(group)
             total_matches += matches_count
 
@@ -241,7 +263,7 @@ async def send_schedules(token: str, admin_id: int, user_ids: dict,
         summary += "✨ Ошибок нет\\!\n" if error_count == 0 else f"❌ Ошибок: *{error_count}*\n"
 
         await bot.send_message(chat_id=admin_id, text=summary, parse_mode="MarkdownV2")
-        log_callback('ok', "Отчёт отправлен администратору")
+        log_callback('info', "Итоговый отчёт отправлен администратору")
 
     except Exception as e:
         log_callback('err', f"Критическая ошибка: {e}")
@@ -252,7 +274,6 @@ async def send_schedules(token: str, admin_id: int, user_ids: dict,
 
 
 def run_async(coro):
-    """Безопасный запуск корутины в среде Streamlit."""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -271,7 +292,7 @@ try:
     BOT_TOKEN = st.secrets["BOT_TOKEN"]
     ADMIN_ID  = int(st.secrets["ADMIN_ID"])
 except KeyError as e:
-    st.error(f"❌ Не найден секрет: {e}. Добавь BOT_TOKEN и ADMIN_ID в Streamlit Secrets.")
+    st.error(f"❌ Не найден секрет: {e}. Добавь BOT_TOKEN and ADMIN_ID в Streamlit Secrets.")
     st.stop()
 
 # ─── Состояние сессии ─────────────────────────────────────────────────────────
@@ -380,7 +401,7 @@ if st.button("⚡️ Запустить рассылку в Telegram",
 if st.session_state.results:
     sent, errors, skipped, total = st.session_state.results
     st.markdown("---")
-    st.markdown("#### 📊 Итоги рассылки")
+    st.markdown("<h4 style='color: #0f172a;'>📊 Итоги рассылки</h4>", unsafe_allow_html=True)
     st.markdown(f"""
     <div class="result-grid">
         <div class="result-card">
@@ -396,8 +417,8 @@ if st.session_state.results:
             <div class="result-lbl">Ошибок</div>
         </div>
     </div>
-    <div class="result-card" style="margin-top:12px;background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:14px 20px;text-align:center;">
-        <span style="color:#60a5fa;font-size:15px;font-weight:600;">📊 Всего матчей в файле: <b>{total}</b></span>
+    <div class="result-card" style="margin-top:14px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:16px 20px; text-align:center;">
+        <span style="color:#0284c7; font-size:15px; font-weight:700;">📊 Всего матчей в файле: {total}</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -405,4 +426,3 @@ if st.session_state.results:
         st.success("✅ Рассылка завершена без ошибок!")
     else:
         st.warning(f"⚠️ Рассылка завершена с {errors} ошибками. Проверь лог выше.")
-
