@@ -5,6 +5,24 @@ import io
 import datetime
 from aiogram import Bot
 
+# ─── Словарь автоботов ────────────────────────────────────────────────────────
+AUTOBOT_MAP = {
+    'Taron': 'autobot45', 'Erik': 'autobot46', 'Tiko Ap.': 'autobot47',
+    'Lyov': 'autobot48', 'Levon': 'autobot61', 'Grigor': 'autobot69',
+    'Hovo': 'autobot71', 'Hayk': 'autobot72', 'Hakob': 'autobot88',
+    'Manvel': 'autobot113', 'Hrant': 'autobot114', 'Davo': 'autobot133',
+    'Azat': 'autobot135', 'Artur': 'autobot149', 'Karen': 'autobot150',
+    'Edo': 'autobot151', 'Vahe-2': 'autobot152', 'Tiko H.': 'autobot173',
+    'Ando': 'autobot174', 'Arkadi': 'autobot177', 'Artur2': 'autobot178',
+    'Hovo2': 'autobot179', 'Aren': 'autobot190', 'Jor': 'autobot191',
+    'Davit': 'autobot192', 'Abul': 'autobot198', 'Mariam': 'autobot222',
+    'Garegin': 'autobot237', 'Hayk-2': 'autobot238', 'Vahe-3': 'autobot239',
+    'Vahe-4': 'autobot240', 'Vrej-2': 'autobot241', 'Jor-2': 'autobot242',
+    'Lilit': 'autobot243', 'Seroj': 'autobot244', 'Davo-2': 'autobot247',
+    'Gor': 'autobot293', 'Liparit': 'autobot294', 'Razmik': 'autobot295',
+    'Gevorg': 'autobot296', 'Hamlet': 'autobot323', 'Arshak': 'autobot324',
+}
+
 # ─── Конфигурация страницы ──────────────────────────────────────────────────
 st.set_page_config(
     page_title="Рассылка расписаний",
@@ -77,7 +95,7 @@ def format_duration(minutes: int) -> str:
 
 def calculate_sheet_logic(df: pd.DataFrame) -> pd.DataFrame:
     df['Оператор'] = df['Оператор'].astype(str).str.strip()
-    
+
     def parse_start_time(val):
         val_str = str(val).strip()
         if '-' in val_str:
@@ -94,38 +112,39 @@ def calculate_sheet_logic(df: pd.DataFrame) -> pd.DataFrame:
     df['Parsed_Start'] = df['Дата начала'].apply(parse_start_time)
     calculated_rows = []
     grouped = df.groupby('Оператор')
-    
+
     for name, group in grouped:
         if name == 'nan' or not name:
             continue
-            
+
         group_sorted = group.sort_values('Parsed_Start')
         min_dt = group_sorted['Parsed_Start'].min()
         max_dt = group_sorted['Parsed_Start'].max()
         match_count = len(group_sorted)
-        
+
         last_competition = str(group_sorted.iloc[-1]['Соревнование']).upper()
-        
+
         if "NBA" in last_competition or "НБА" in last_competition:
             match_duration_mins = 150  # 2 часа 30 минут
         else:
             match_duration_mins = 120  # 2 часа
-            
+
         if pd.notna(min_dt) and pd.notna(max_dt):
             time_diff_mins = int((max_dt - min_dt).total_seconds() / 60)
             total_minutes = time_diff_mins + match_duration_mins
         else:
             total_minutes = 0
-            
+
         calculated_rows.append({
             'Имя': name,
-            'Первый_Матч': min_dt.strftime('%H:%M') if pd.notna(min_dt) else "??:??",
-            'Последний_Матч': max_dt.strftime('%H:%M') if pd.notna(max_dt) else "??:??",
+            'Первый_Матч': min_dt.strftime('%d.%m.%Y %H:%M:%S') if pd.notna(min_dt) else "??:??",
+            'Последний_Матч': max_dt.strftime('%d.%m.%Y %H:%M:%S') if pd.notna(max_dt) else "??:??",
             'Количество': match_count,
             'Отработано_Формат': format_duration(total_minutes),
-            'Отработано_Минуты': total_minutes
+            'Отработано_Минуты': total_minutes,
+            'Автобот': AUTOBOT_MAP.get(name, '—'),
         })
-        
+
     return pd.DataFrame(calculated_rows)
 
 
@@ -133,13 +152,13 @@ def build_messages(name: str, group: pd.DataFrame, calc_info: dict, header_templ
     numbers = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
     matches_count = calc_info['Количество']
     match_word = get_match_word(matches_count)
-    
+
     header_filled = header_template.replace("{Имя}", name)\
                                    .replace("{Количество}", str(matches_count))\
                                    .replace("{Слово_Матч}", match_word)\
                                    .replace("{Часы_Минуты}", calc_info['Отработано_Формат'])\
                                    .replace("{Минуты}", str(calc_info['Отработано_Минуты']))
-                                   
+
     current_msg = escape_markdown(header_filled) + "\n\n"
     messages = []
 
@@ -182,9 +201,9 @@ async def send_schedules(token: str, admin_id: int, user_ids: dict,
         grouped = df.groupby('Оператор')
 
         for operator_name, group in grouped:
-            name_clean  = str(operator_name).strip()
+            name_clean = str(operator_name).strip()
             if name_clean == 'nan' or not name_clean: continue
-            
+
             if name_clean not in user_ids:
                 log_callback('warn', f"{name_clean} — не найден в списке Telegram ID")
                 skipped_count += 1
@@ -293,34 +312,42 @@ df_source_global = None
 if uploaded_file:
     st.markdown(f'<div class="file-ok">✅ &nbsp;{uploaded_file.name} загружен</div>', unsafe_allow_html=True)
     df_source_global = pd.read_excel(io.BytesIO(uploaded_file.read()), engine='openpyxl')
-    
+
     required_cols = ['Оператор', 'Дата начала', 'Название события', 'Соревнование']
     if all(c in df_source_global.columns for c in required_cols):
         calc_df_global = calculate_sheet_logic(df_source_global)
-        
+
+        # Сортировка по времени первого матча
+        calc_df_global['_sort'] = pd.to_datetime(
+            calc_df_global['Первый_Матч'], format='%d.%m.%Y %H:%M:%S', errors='coerce'
+        )
+        calc_df_global = calc_df_global.sort_values('_sort').drop(columns='_sort').reset_index(drop=True)
+
         st.markdown("<br><div class='section-label'>📊 Автоматический расчет таблицы:</div>", unsafe_allow_html=True)
-        
-        # Функция для динамического окрашивания строк в зависимости от часов
+
         def style_hours(row):
             minutes = row['Отработано_Минуты']
             hours = minutes / 60
-            
             if hours >= 8:
-                bg_color = 'background-color: #d1fae5; color: #065f46;'  # Нежно-зеленый (>= 8ч)
+                bg_color = 'background-color: #d1fae5; color: #065f46;'
             elif 6 <= hours < 8:
-                bg_color = 'background-color: #fef3c7; color: #92400e;'  # Нежно-желтый (6-7ч)
+                bg_color = 'background-color: #fef3c7; color: #92400e;'
             else:
-                bg_color = 'background-color: #fee2e2; color: #991b1b;'  # Нежно-красный (< 6ч)
-                
+                bg_color = 'background-color: #fee2e2; color: #991b1b;'
             return [bg_color] * len(row)
 
         styled_calc_df = calc_df_global.style.apply(style_hours, axis=1)
-        
+
         st.dataframe(
-            styled_calc_df, 
+            styled_calc_df,
             column_config={
-                "Имя": "Оператор", "Первый_Матч": "Начало", "Последний_Матч": "Конец (Матч)",
-                "Количество": "Матчи", "Отработано_Формат": "Часы:Мин", "Отработано_Минуты": "Всего Минут"
+                "Имя": "Оператор",
+                "Первый_Матч": "Приход",
+                "Последний_Матч": "Уход (посл. матч)",
+                "Количество": "Матчи",
+                "Отработано_Формат": "Часы:Мин",
+                "Отработано_Минуты": "Всего Минут",
+                "Автобот": "Автобот",
             },
             use_container_width=True, hide_index=True
         )
