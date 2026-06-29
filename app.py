@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import asyncio
 import io
+import datetime
 from aiogram import Bot
 
 # ─── Конфигурация страницы ──────────────────────────────────────────────────
@@ -14,131 +15,34 @@ st.set_page_config(
 # ─── Кастомные стили (Светлая тема) ─────────────────────────────────────────
 st.markdown("""
 <style>
-/* Основной фон и шрифт */
 .stApp { background: #f8fafc; color: #1e293b; }
-
-/* Заголовок */
-.main-title {
-    font-size: 28px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.5px;
-    margin-bottom: 6px;
-}
-.main-sub {
-    font-size: 14px;
-    color: #64748b;
-    margin-bottom: 32px;
-}
-
-/* Карточки-секции */
+.main-title { font-size: 28px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 6px; }
+.main-sub { font-size: 14px; color: #64748b; margin-bottom: 32px; }
 .section-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 24px 28px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;
+    padding: 24px 28px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
-.section-label {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: #475569;
-    margin-bottom: 14px;
-}
-
-/* Статус файла */
-.file-ok {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 12px;
-    padding: 14px 18px;
-    color: #166534;
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 10px;
-}
-.file-none {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 16px;
-    color: #64748b;
-    font-size: 14px;
-    margin-top: 10px;
-    text-align: center;
-}
-
-/* Карточки итогов */
-.result-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-top: 20px;
-}
-.result-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 20px 12px;
-    text-align: center;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
-}
-.result-val {
-    font-size: 34px;
-    font-weight: 800;
-    display: block;
-    line-height: 1;
-}
-.result-lbl {
-    font-size: 11px;
-    color: #64748b;
-    margin-top: 8px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-}
-.val-ok   { color: #10b981; }
-.val-skip { color: #f59e0b; }
-.val-err  { color: #ef4444; }
-
-/* Лог */
-.log-entry {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 14px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    line-height: 1.5;
-    border: 1px solid transparent;
-}
-.log-ok   { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
-.log-err  { background: #fef2f2; color: #991b1b; border-color: #fee2e2; }
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #475569; margin-bottom: 14px; }
+.file-ok { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 18px; color: #166534; font-size: 14px; font-weight: 600; margin-top: 10px; }
+.file-none { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 16px; color: #64748b; font-size: 14px; margin-top: 10px; text-align: center; }
+.result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+.result-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px 12px; text-align: center; }
+.result-val { font-size: 34px; font-weight: 800; display: block; line-height: 1; }
+.result-lbl { font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; }
+.val-ok { color: #10b981; } .val-skip { color: #f59e0b; } .val-err { color: #ef4444; }
+.log-entry { font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; border: 1px solid transparent; }
+.log-ok { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
+.log-err { background: #fef2f2; color: #991b1b; border-color: #fee2e2; }
 .log-warn { background: #fffbec; color: #92400e; border-color: #fef3c7; }
 .log-info { background: #f0f9ff; color: #075985; border-color: #e0f2fe; }
 
-/* Адаптация дефолтных элементов ввода Streamlit под светлую тему */
-div[data-baseweb="input"] {
-    background-color: #ffffff !important;
-    border-radius: 10px !important;
-}
+div[data-baseweb="input"], div[data-baseweb="textarea"] { background-color: #ffffff !important; border-radius: 10px !important; }
 button[kind="primary"] {
-    background-color: #2563eb !important;
-    border-color: #2563eb !important;
-    color: white !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 1rem !important;
+    background-color: #2563eb !important; border-color: #2563eb !important; color: white !important;
+    border-radius: 12px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important;
     box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
 }
-button[kind="secondary"] {
-    border-radius: 10px !important;
-}
-
-/* Скрыть стандартные элементы streamlit */
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 3rem; max-width: 680px; }
 </style>
@@ -163,32 +67,115 @@ def get_operator_word(count: int) -> str:
     if count % 10 in [2,3,4] and count % 100 not in [12,13,14]: return "оператора"
     return "операторов"
 
-def build_messages(name: str, group: pd.DataFrame) -> list[str]:
+def format_duration(minutes: int) -> str:
+    """Переводит чистые минуты в красивый формат ЧЧ:ММ:СС"""
+    hours = minutes // 60
+    mins = minutes % 60
+    return f"{hours}:{mins:02d}:00"
+
+
+# ─── ЯДРО АВТОМАТИЧЕСКОГО РАСЧЕТА (ЗАМЕНА ИСХОДНИКА И РАСЧЕТА) ────────────────
+
+def calculate_sheet_logic(df: pd.DataFrame) -> pd.DataFrame:
+    """Полностью повторяет логику формул UNIQUE, MINIFS, MAXIFS, COUNTIF и расчета времени"""
+    # Чистим имена операторов
+    df['Оператор'] = df['Оператор'].astype(str).str.strip()
+    
+    # Конвертируем колонку времени в полноценный DateTime для вычислений
+    # Если там текстовый диапазон типа '07:00-13:00' (для Кибербаскета), парсим первое время
+    def parse_start_time(val):
+        val_str = str(val).strip()
+        if '-' in val_str:
+            val_str = val_str.split('-')[0].strip()
+        
+        # Пробуем распарсить стандартный формат даты-времени
+        try:
+            return pd.to_datetime(val_str)
+        except:
+            # Если там только время (ЧЧ:ММ), привязываем к сегодняшней дате для корректности расчетов
+            try:
+                t = datetime.time.fromisoformat(val_str[:5])
+                return datetime.datetime.combine(datetime.date.today(), t)
+            except:
+                return pd.NaT
+
+    df['Parsed_Start'] = df['Дата начала'].apply(parse_start_time)
+    
+    calculated_rows = []
+    
+    # Группируем (Аналог =UNIQUE())
+    grouped = df.groupby('Оператор')
+    
+    for name, group in grouped:
+        if name == 'nan' or not name:
+            continue
+            
+        # Сортируем матчи оператора по времени, чтобы точно воссоздать логику XLOOKUP(..., 0, -1) (последнее событие)
+        group_sorted = group.sort_values('Parsed_Start')
+        
+        # 1. Мин и макс время (Аналоги =MINIFS() и =MAXIFS())
+        min_dt = group_sorted['Parsed_Start'].min()
+        max_dt = group_sorted['Parsed_Start'].max()
+        
+        # 2. Кол-во матчей (Аналог =COUNTIF())
+        match_count = len(group_sorted)
+        
+        # 3. Логика XLOOKUP: смотрим соревнование ПОСЛЕДНЕГО матча оператора
+        last_competition = str(group_sorted.iloc[-1]['Соревнование']).upper()
+        
+        # Проверяем условие на NBA / НБА
+        if "NBA" in last_competition or "НБА" in last_competition:
+            match_duration_mins = 150  # 2 часа 30 минут
+        else:
+            match_duration_mins = 120  # 2 часа
+            
+        # 4. Считаем общее время работы в минутах (Аналог формулы E2 и F2)
+        if pd.notna(min_dt) and pd.notna(max_dt):
+            # Разница между последним и первым матчем в минутах
+            time_diff_mins = int((max_dt - min_dt).total_seconds() / 60)
+            # Финальные минуты = разница + длительность последнего матча
+            total_minutes = time_diff_mins + match_duration_mins
+        else:
+            total_minutes = 0
+            
+        calculated_rows.append({
+            'Имя': name,
+            'Количество': match_count,
+            'Отработано_Минуты': total_minutes,
+            'Отработано_Формат': format_duration(total_minutes),
+            'Первый_Матч': min_dt.strftime('%H:%M') if pd.notna(min_dt) else "??:??",
+            'Последний_Матч': max_dt.strftime('%H:%M') if pd.notna(max_dt) else "??:??"
+        })
+        
+    return pd.DataFrame(calculated_rows)
+
+
+def build_messages(name: str, group: pd.DataFrame, calc_info: dict, header_template: str, footer_template: str) -> list[str]:
     numbers = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
-    matches_count = len(group)
-    current_msg = (
-        f"🏀 *Привет, {escape_markdown(name)}\\!*\n"
-        f"📊 Завтра у тебя *{matches_count}* {escape_markdown(get_match_word(matches_count))}\n\n"
-    )
+    matches_count = calc_info['Количество']
+    match_word = get_match_word(matches_count)
+    
+    # Подставляем новые расчетные данные в переменные шаблона
+    header_filled = header_template.replace("{Имя}", name)\
+                                   .replace("{Количество}", str(matches_count))\
+                                   .replace("{Слово_Матч}", match_word)\
+                                   .replace("{Часы_Минуты}", calc_info['Отработано_Формат'])\
+                                   .replace("{Минуты}", str(calc_info['Отработано_Минуты']))
+                                   
+    current_msg = escape_markdown(header_filled) + "\n\n"
     messages = []
 
-    for idx, (_, row) in enumerate(group.iterrows()):
+    for idx, (_, row) in enumerate(group.sort_values('Parsed_Start').iterrows()):
         raw_dt = row['Дата начала']
-        if pd.isna(raw_dt):
-            time_val = "??:??"
-        elif isinstance(raw_dt, pd.Timestamp):
-            time_val = raw_dt.strftime('%H:%M')
-        else:
-            time_val = str(raw_dt).split(' ')[-1][:5]
+        if pd.isna(raw_dt): time_val = "??:??"
+        elif isinstance(raw_dt, pd.Timestamp): time_val = raw_dt.strftime('%H:%M')
+        else: time_val = str(raw_dt).split(' ')[-1][:5]
 
         event_name  = escape_markdown(str(row['Название события']))
         competition = escape_markdown(str(row['Соревнование']))
         number_emoji = numbers[idx] if idx < 10 else f"{idx+1}\\."
 
-        block = (
-            f"{number_emoji} *{escape_markdown(time_val)}* — {event_name}\n"
-            f"    🏆 {competition}\n\n"
-        )
+        block = f"{number_emoji} *{escape_markdown(time_val)}* — {event_name}\n    🏆 {competition}\n\n"
 
         if len(current_msg) + len(block) > 3900:
             messages.append(current_msg)
@@ -196,12 +183,12 @@ def build_messages(name: str, group: pd.DataFrame) -> list[str]:
         else:
             current_msg += block
 
-    footer = "\n🚀 *Удачи на смене\\!*"
-    if len(current_msg) + len(footer) > 4000:
+    footer_escaped = "\n" + escape_markdown(footer_template)
+    if len(current_msg) + len(footer_escaped) > 4000:
         messages.append(current_msg)
-        messages.append(footer)
+        messages.append(footer_escaped)
     else:
-        messages.append(current_msg + footer)
+        messages.append(current_msg + footer_escaped)
 
     return messages
 
@@ -209,31 +196,28 @@ def build_messages(name: str, group: pd.DataFrame) -> list[str]:
 # ─── Асинхронная функция рассылки ────────────────────────────────────────────
 
 async def send_schedules(token: str, admin_id: int, user_ids: dict,
-                         df: pd.DataFrame, log_callback):
+                         df: pd.DataFrame, calc_df: pd.DataFrame, header_template: str, footer_template: str, log_callback):
     bot = Bot(token=token)
     sent_count = error_count = skipped_count = total_matches = 0
 
     try:
-        required_cols = ['Оператор', 'Дата начала', 'Название события', 'Соревнование']
-        missing = [c for c in required_cols if c not in df.columns]
-        if missing:
-            log_callback('err', f"Отсутствуют колонки: {missing}")
-            return 0, 0, 0, 0
-
         grouped = df.groupby('Оператор')
 
         for operator_name, group in grouped:
             name_clean  = str(operator_name).strip()
-            matches_count = len(group)
-            total_matches += matches_count
-
+            if name_clean == 'nan' or not name_clean: continue
+            
             if name_clean not in user_ids:
-                log_callback('warn', f"{name_clean} — не найден в списке ({matches_count} матчей)")
+                log_callback('warn', f"{name_clean} — не найден в списке Telegram ID")
                 skipped_count += 1
                 continue
 
+            # Находим расчетную строчку оператора из калькулятора
+            op_calc = calc_df[calc_df['Имя'] == name_clean].iloc[0].to_dict()
+            total_matches += op_calc['Количество']
+
             target_id = user_ids[name_clean]
-            messages  = build_messages(name_clean, group)
+            messages  = build_messages(name_clean, group, op_calc, header_template, footer_template)
             op_ok     = True
 
             for part in messages:
@@ -252,14 +236,12 @@ async def send_schedules(token: str, admin_id: int, user_ids: dict,
 
             if op_ok:
                 sent_count += 1
-                log_callback('ok', f"{name_clean} — отправлено ({matches_count} {get_match_word(matches_count)})")
+                log_callback('ok', f"{name_clean} — отправлено (Отработано: {op_calc['Отработано_Формат']})")
 
         # Отчёт администратору
         summary  = f"📬 *Рассылка завершена\\!*\n\n"
         summary += f"✅ Отправлено: *{sent_count}* {escape_markdown(get_operator_word(sent_count))}\n"
-        summary += f"📊 Всего матчей: *{total_matches}*\n"
-        if skipped_count > 0:
-            summary += f"⚠️ Пропущено: *{skipped_count}* {escape_markdown(get_operator_word(skipped_count))}\n"
+        summary += f"📊 Всего матчей обработао: *{total_matches}*\n"
         summary += "✨ Ошибок нет\\!\n" if error_count == 0 else f"❌ Ошибок: *{error_count}*\n"
 
         await bot.send_message(chat_id=admin_id, text=summary, parse_mode="MarkdownV2")
@@ -292,7 +274,7 @@ try:
     BOT_TOKEN = st.secrets["BOT_TOKEN"]
     ADMIN_ID  = int(st.secrets["ADMIN_ID"])
 except KeyError as e:
-    st.error(f"❌ Не найден секрет: {e}. Добавь BOT_TOKEN and ADMIN_ID в Streamlit Secrets.")
+    st.error(f"❌ Не найден секрет: {e}. Добавь BOT_TOKEN и ADMIN_ID в Streamlit Secrets.")
     st.stop()
 
 # ─── Состояние сессии ─────────────────────────────────────────────────────────
@@ -300,75 +282,95 @@ if 'operators' not in st.session_state:
     st.session_state.operators = [
         {'name': 'Tigran', 'id': '5980876264'},
         {'name': 'Taron',  'id': '1014173917'},
+        {'name': 'Lilit',  'id': '1234567890'}, # Добавил тестовых из твоего скрина
+        {'name': 'Artur2', 'id': '1122334455'}
     ]
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
-if 'results' not in st.session_state:
-    st.session_state.results = None
+if 'logs' not in st.session_state: st.session_state.logs = []
+if 'results' not in st.session_state: st.session_state.results = None
+
+if 'header_template' not in st.session_state:
+    st.session_state.header_template = "🏀 Привет, {Имя}!\n⏱ Твое время смены: {Часы_Минуты} ({Минуты} мин)\n📊 Завтра у тебя {Количество} {Слово_Матч}:"
+if 'footer_template' not in st.session_state:
+    st.session_state.footer_template = "🚀 Удачи на смене!"
 
 
-# ─── UI ───────────────────────────────────────────────────────────────────────
+# ─── UI INTERFACE ─────────────────────────────────────────────────────────────
 
-st.markdown('<div class="main-title">🚀 Панель рассылки расписаний операторов</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-sub">Загрузи файл — нажми кнопку — операторы получат расписание в Telegram</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🚀 Расчет и Рассылка Графика Трейдинга</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-sub">Закинь файл с матчами — система сама рассчитает часы, минуты и разошлет уведомления</div>', unsafe_allow_html=True)
 
-# ── Загрузка файла
-st.markdown('<div class="section-card"><div class="section-label">Файл расписания (.xlsx)</div>', unsafe_allow_html=True)
+# ── БЛОК 1: Шаблоны текстов
+st.markdown('<div class="section-card"><div class="section-label">⚙️ Настройка шаблона сообщения</div>', unsafe_allow_html=True)
+st.caption("Доступны авто-переменные: `{Имя}`, `{Количество}`, `{Слово_Матч}`, `{Часы_Минуты}` (ЧЧ:ММ:СС), `{Минуты}` (числом)")
+
+st.session_state.header_template = st.text_area("Верхняя часть сообщения", value=st.session_state.header_template, height=90)
+st.session_state.footer_template = st.text_input("Нижняя часть сообщения (Напутствие)", value=st.session_state.footer_template)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ── БЛОК 2: Загрузка файла
+st.markdown('<div class="section-card"><div class="section-label">Загрузка файла с расписанием</div>', unsafe_allow_html=True)
 uploaded_file = st.file_uploader("", type=["xlsx"], label_visibility="collapsed")
 
+calc_df_global = None
+df_source_global = None
+
 if uploaded_file:
-    st.markdown(f'<div class="file-ok">✅ &nbsp;{uploaded_file.name}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="file-ok">✅ &nbsp;{uploaded_file.name} загружен</div>', unsafe_allow_html=True)
+    
+    # Делаем расчет на лету сразу после загрузки файла!
+    df_source_global = pd.read_excel(io.BytesIO(uploaded_file.read()), engine='openpyxl')
+    
+    required_cols = ['Оператор', 'Дата начала', 'Название события', 'Соревнование']
+    if all(c in df_source_global.columns for c in required_cols):
+        calc_df_global = calculate_sheet_logic(df_source_global)
+        
+        # Отображаем результаты расчетов прямо в веб-интерфейсе!
+        st.markdown("<br><div class='section-label'>📊 Автоматический расчет таблицы:</div>", unsafe_allow_html=True)
+        st.dataframe(
+            calc_df_global[['Имя', 'Первый_Матч', 'Последний_Матч', 'Количество', 'Отработано_Формат', 'Отработано_Минуты']], 
+            column_config={
+                "Имя": "Оператор", "Первый_Матч": "Начало", "Последний_Матч": "Конец (Матч)",
+                "Количество": "Матчи", "Отработано_Формат": "Часы:Мин", "Отработано_Минуты": "Всего Минут"
+            },
+            use_container_width=True, hide_index=True
+        )
+    else:
+        st.error(f"Ошибка! В файле отсутствуют нужные колонки: {required_cols}")
 else:
-    st.markdown('<div class="file-none">📂 &nbsp;Перетащи файл сюда или нажми «Browse files»</div>', unsafe_allow_html=True)
+    st.markdown('<div class="file-none">📂 &nbsp;Перетащи сюда .xlsx файл, выгруженный из системы</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ── Операторы
-st.markdown('<div class="section-card"><div class="section-label">Операторы и их Telegram ID</div>', unsafe_allow_html=True)
+# ── БЛОК 3: Операторы
+st.markdown('<div class="section-card"><div class="section-label">База операторов (Telegram ID)</div>', unsafe_allow_html=True)
 
 ops = st.session_state.operators
 to_delete = None
 
 for i, op in enumerate(ops):
     c1, c2, c3 = st.columns([3, 3, 0.7])
-    with c1:
-        ops[i]['name'] = st.text_input(f"Имя_{i}", value=op['name'],
-                                        placeholder="Имя (как в файле)",
-                                        label_visibility="collapsed", key=f"op_name_{i}")
-    with c2:
-        ops[i]['id'] = st.text_input(f"ID_{i}", value=op['id'],
-                                      placeholder="Telegram User ID",
-                                      label_visibility="collapsed", key=f"op_id_{i}")
+    with c1: ops[i]['name'] = st.text_input(f"Имя_{i}", value=op['name'], placeholder="Имя", label_visibility="collapsed", key=f"op_name_{i}")
+    with c2: ops[i]['id'] = st.text_input(f"ID_{i}", value=op['id'], placeholder="Telegram ID", label_visibility="collapsed", key=f"op_id_{i}")
     with c3:
-        if st.button("✕", key=f"del_{i}", help="Удалить"):
-            to_delete = i
+        if st.button("✕", key=f"del_{i}"): to_delete = i
 
 if to_delete is not None:
     st.session_state.operators.pop(to_delete)
     st.rerun()
 
-if st.button("＋ Добавить оператора", use_container_width=True):
+if st.button("＋ Добавить нового оператора", use_container_width=True):
     st.session_state.operators.append({'name': '', 'id': ''})
     st.rerun()
-
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ── Кнопка запуска
-can_send = bool(uploaded_file)
+# ── БЛОК 4: Запуск рассылки
+can_send = calc_df_global is not None
 
-if st.button("⚡️ Запустить рассылку в Telegram",
-             use_container_width=True,
-             disabled=not can_send,
-             type="primary"):
-
+if st.button("⚡️ Утвердить расчет и запустить рассылку", use_container_width=True, disabled=not can_send, type="primary"):
     st.session_state.logs = []
     st.session_state.results = None
 
-    user_ids = {op['name'].strip(): op['id'].strip()
-                for op in st.session_state.operators
-                if op['name'].strip() and op['id'].strip()}
-
-    df = pd.read_excel(io.BytesIO(uploaded_file.read()), engine='openpyxl')
+    user_ids = {op['name'].strip(): op['id'].strip() for op in st.session_state.operators if op['name'].strip() and op['id'].strip()}
 
     log_container = st.container()
     log_entries   = []
@@ -379,50 +381,30 @@ if st.button("⚡️ Запустить рассылку в Telegram",
         st.session_state.logs = log_entries[:]
         with log_container:
             css_class = {'ok':'log-ok','err':'log-err','warn':'log-warn','info':'log-info'}.get(kind,'log-info')
-            st.markdown(
-                f'<div class="log-entry {css_class}">{icons.get(kind,"")} {msg}</div>',
-                unsafe_allow_html=True
-            )
+            st.markdown(f'<div class="log-entry {css_class}">{icons.get(kind,"")} {msg}</div>', unsafe_allow_html=True)
 
-    with st.spinner("Отправляю сообщения..."):
+    with st.spinner("Запуск асинхронной отправки по операторам..."):
         sent, errors, skipped, total = run_async(
             send_schedules(
-                token        = BOT_TOKEN,
-                admin_id     = ADMIN_ID,
-                user_ids     = user_ids,
-                df           = df,
-                log_callback = log_callback,
+                token=BOT_TOKEN, admin_id=ADMIN_ID, user_ids=user_ids,
+                df=df_source_global, calc_df=calc_df_global,
+                header_template=st.session_state.header_template,
+                footer_template=st.session_state.footer_template,
+                log_callback=log_callback
             )
         )
 
     st.session_state.results = (sent, errors, skipped, total)
 
-# ── Итоги
+# ── Итоги рассылки
 if st.session_state.results:
     sent, errors, skipped, total = st.session_state.results
     st.markdown("---")
-    st.markdown("<h4 style='color: #0f172a;'>📊 Итоги рассылки</h4>", unsafe_allow_html=True)
     st.markdown(f"""
     <div class="result-grid">
-        <div class="result-card">
-            <span class="result-val val-ok">{sent}</span>
-            <div class="result-lbl">Отправлено</div>
-        </div>
-        <div class="result-card">
-            <span class="result-val val-skip">{skipped}</span>
-            <div class="result-lbl">Пропущено</div>
-        </div>
-        <div class="result-card">
-            <span class="result-val val-err">{errors}</span>
-            <div class="result-lbl">Ошибок</div>
-        </div>
-    </div>
-    <div class="result-card" style="margin-top:14px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:16px 20px; text-align:center;">
-        <span style="color:#0284c7; font-size:15px; font-weight:700;">📊 Всего матчей в файле: {total}</span>
+        <div class="result-card"><span class="result-val val-ok">{sent}</span><div class="result-lbl">Успешно</div></div>
+        <div class="result-card"><span class="result-val val-skip">{skipped}</span><div class="result-lbl">Пропущено</div></div>
+        <div class="result-card"><span class="result-val val-err">{errors}</span><div class="result-lbl">Ошибки</div></div>
     </div>
     """, unsafe_allow_html=True)
-
-    if errors == 0:
-        st.success("✅ Рассылка завершена без ошибок!")
-    else:
-        st.warning(f"⚠️ Рассылка завершена с {errors} ошибками. Проверь лог выше.")
+    if errors == 0: st.success("🎉 Все уведомления доставлены успешно!")
