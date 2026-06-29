@@ -319,4 +319,82 @@ if uploaded_file:
         st.dataframe(
             styled_calc_df, 
             column_config={
-                "Имя": "Оператор", "Первый_Матч": "Начало", "Последний_Матч": "Ко
+                "Имя": "Оператор", "Первый_Матч": "Начало", "Последний_Матч": "Конец (Матч)",
+                "Количество": "Матчи", "Отработано_Формат": "Часы:Мин", "Отработано_Минуты": "Всего Минут"
+            },
+            use_container_width=True, hide_index=True
+        )
+    else:
+        st.error(f"Ошибка! В файле отсутствуют нужные колонки: {required_cols}")
+else:
+    st.markdown('<div class="file-none">📂 &nbsp;Перетащи сюда .xlsx файл, выгруженный из системы</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ── БЛОК 3: Операторы
+st.markdown('<div class="section-card"><div class="section-label">База операторов (Telegram ID)</div>', unsafe_allow_html=True)
+
+ops = st.session_state.operators
+to_delete = None
+
+for i, op in enumerate(ops):
+    c1, c2, c3 = st.columns([3, 3, 0.7])
+    with c1: ops[i]['name'] = st.text_input(f"Имя_{i}", value=op['name'], placeholder="Имя", label_visibility="collapsed", key=f"op_name_{i}")
+    with c2: ops[i]['id'] = st.text_input(f"ID_{i}", value=op['id'], placeholder="Telegram ID", label_visibility="collapsed", key=f"op_id_{i}")
+    with c3:
+        if st.button("✕", key=f"del_{i}"): to_delete = i
+
+if to_delete is not None:
+    st.session_state.operators.pop(to_delete)
+    st.rerun()
+
+if st.button("＋ Добавить нового оператора", use_container_width=True):
+    st.session_state.operators.append({'name': '', 'id': ''})
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ── БЛОК 4: Запуск рассылки
+can_send = calc_df_global is not None
+
+if st.button("⚡️ Утвердить расчет и запустить рассылку", use_container_width=True, disabled=not can_send, type="primary"):
+    st.session_state.logs = []
+    st.session_state.results = None
+
+    user_ids = {op['name'].strip(): op['id'].strip() for op in st.session_state.operators if op['name'].strip() and op['id'].strip()}
+
+    log_container = st.container()
+    log_entries   = []
+
+    def log_callback(kind, msg):
+        icons = {'ok':'✅', 'err':'❌', 'warn':'⚠️', 'info':'ℹ️'}
+        log_entries.append((kind, f"{icons.get(kind,'')} {msg}"))
+        st.session_state.logs = log_entries[:]
+        with log_container:
+            css_class = {'ok':'log-ok','err':'log-err','warn':'log-warn','info':'log-info'}.get(kind,'log-info')
+            st.markdown(f'<div class="log-entry {css_class}">{icons.get(kind,"")} {msg}</div>', unsafe_allow_html=True)
+
+    with st.spinner("Запуск асинхронной отправки по операторам..."):
+        sent, errors, skipped, total = run_async(
+            send_schedules(
+                token=BOT_TOKEN, admin_id=ADMIN_ID, user_ids=user_ids,
+                df=df_source_global, calc_df=calc_df_global,
+                header_template=st.session_state.header_template,
+                footer_template=st.session_state.footer_template,
+                log_callback=log_callback
+            )
+        )
+
+    st.session_state.results = (sent, errors, skipped, total)
+
+# ── Итоги рассылки
+if st.session_state.results:
+    sent, errors, skipped, total = st.session_state.results
+    st.markdown("---")
+    st.markdown(f"""
+    <div class="result-grid">
+        <div class="result-card"><span class="result-val val-ok">{sent}</span><div class="result-lbl">Успешно</div></div>
+        <div class="result-card"><span class="result-val val-skip">{skipped}</span><div class="result-lbl">Пропущено</div></div>
+        <div class="result-card"><span class="result-val val-err">{errors}</span><div class="result-lbl">Ошибки</div></div>
+    </div>
+    """, unsafe_allow_html=True)
+    if errors == 0: st.success("🎉 Все уведомления доставлены успешно!")
